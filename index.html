@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Nikko Day Trip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one narrow column. Edit panel first, then a vertical timeline (times left, stops right) where every stop opens an editor. Rose Quartz and Serenity, flat fills. */
+:root {
+  --bg: #fbf6f6;
+  --surface: #ffffff;
+  --fg: #26304a;
+  --muted: #6b7390;
+  --line: #e7dcdf;
+  --rose: #f7cac9;
+  --rose-ink: #8a3b44;
+  --serenity: #92a8d1;
+  --serenity-soft: #e4eaf5;
+  --serenity-ink: #34517f;
+  --accent: #5f7db3;
+  --on-accent: #ffffff;
+  --done: #9aa3ba;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #171a26;
+    --surface: #20243a;
+    --fg: #eceef7;
+    --muted: #9aa2c0;
+    --line: #333852;
+    --rose: #5a3a45;
+    --rose-ink: #f7cac9;
+    --serenity: #92a8d1;
+    --serenity-soft: #2a3556;
+    --serenity-ink: #b9c9e6;
+    --accent: #92a8d1;
+    --on-accent: #14213d;
+    --done: #6c7491;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #171a26;
+  --surface: #20243a;
+  --fg: #eceef7;
+  --muted: #9aa2c0;
+  --line: #333852;
+  --rose: #5a3a45;
+  --rose-ink: #f7cac9;
+  --serenity: #92a8d1;
+  --serenity-soft: #2a3556;
+  --serenity-ink: #b9c9e6;
+  --accent: #92a8d1;
+  --on-accent: #14213d;
+  --done: #6c7491;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+header { display: flex; flex-direction: column; gap: 6px; }
+.hrow { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--rose-ink); }
+h1 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; min-width: 0; overflow-wrap: anywhere; }
+.route { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.hform { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--serenity-soft); border-radius: 14px; padding: 12px 14px; min-width: 0; }
+.stat:nth-child(2) { background: var(--rose); }
+.stat .k { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--serenity-ink); }
+.stat:nth-child(2) .k { color: var(--rose-ink); }
+.stat .v { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.stat:nth-child(2) .v { color: var(--rose-ink); }
+
+h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* Edit panel */
+.tools { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.switch { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; font-weight: 600; cursor: pointer; }
+.switch input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.tools-foot { display: flex; gap: 10px; flex-wrap: wrap; }
+.verdict { background: var(--serenity-soft); border-radius: 12px; padding: 12px 14px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.verdict strong { font-variant-numeric: tabular-nums; }
+.verdict.bad { background: var(--rose); color: var(--rose-ink); }
+
+/* Form controls */
+.f { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.f label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.f input[type="text"], .f input[type="time"], .f input[type="number"], .f select {
+  font: inherit; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-width: 0; width: 100%;
+}
+.f input[type="file"] { font: inherit; font-size: 13px; color: var(--muted); width: 100%; min-width: 0; }
+.f input:focus-visible, .f select:focus-visible { outline: 3px solid var(--rose); outline-offset: 1px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.span { grid-column: 1 / -1; }
+
+.btn { font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px; cursor: pointer; }
+.btn.sm { font-size: 12px; padding: 4px 11px; }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.warn { color: var(--rose-ink); border-color: var(--rose-ink); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+
+.progress { display: flex; flex-direction: column; gap: 8px; }
+.progress-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-weight: 600; }
+.bar { height: 8px; border-radius: 99px; background: var(--serenity-soft); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
+
+ol.timeline { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; }
+.stop { display: grid; grid-template-columns: 78px 1fr; column-gap: 14px; position: relative; padding-bottom: 20px; }
+.stop:last-child { padding-bottom: 0; }
+.when { text-align: right; padding-top: 2px; min-width: 0; }
+.when .t { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.35; }
+.when .alt { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.when.moved .t { color: var(--rose-ink); }
+.body { position: relative; padding-left: 22px; min-width: 0; border-left: 2px solid var(--line); padding-bottom: 2px; display: flex; flex-direction: column; gap: 6px; }
+.stop:last-child .body { border-left-color: transparent; }
+.dot { position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 3px solid var(--accent); }
+.stop.k-food .dot { border-color: var(--rose-ink); }
+.stop.k-sight .dot { border-color: var(--serenity); background: var(--serenity); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.top { display: flex; gap: 10px; align-items: flex-start; }
+.chk { appearance: none; -webkit-appearance: none; flex: none; width: 22px; height: 22px; margin: 1px 0 0; border: 2px solid var(--serenity); border-radius: 7px; background: var(--surface); cursor: pointer; display: grid; place-items: center; }
+.chk:checked { background: var(--accent); border-color: var(--accent); }
+.chk:checked::after { content: ""; width: 9px; height: 5px; border-left: 2.5px solid var(--surface); border-bottom: 2.5px solid var(--surface); transform: rotate(-45deg) translate(1px, -1px); }
+.chk:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.title { font-weight: 700; font-size: 16px; line-height: 1.3; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 9px; border-radius: 99px; background: var(--serenity-soft); color: var(--serenity-ink); }
+.chip.food { background: var(--rose); color: var(--rose-ink); }
+.chip.fixed { background: var(--rose); color: var(--rose-ink); }
+.fare { margin-left: auto; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.note { font-size: 13px; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+.gapnote { font-size: 12px; font-weight: 600; color: var(--muted); padding-top: 4px; }
+.gapnote.bad { color: var(--rose-ink); background: var(--rose); border-radius: 8px; padding: 4px 10px; align-self: flex-start; }
+.stop.done .title { color: var(--done); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.stop.done .card { opacity: .72; }
+
+/* Train legs inside a stop */
+.lgbox { display: flex; flex-direction: column; gap: 12px; }
+.lg { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.lg:first-child { border-top: 0; padding-top: 0; }
+.lg-top { display: flex; gap: 8px; align-items: flex-end; }
+.lg-top .code { width: 64px; flex: none; }
+.lg-top .lname { flex: 1; }
+.fields { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.fields .f.tm { width: 126px; }
+.fields .f.rd { width: 80px; }
+.arr { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; padding-bottom: 8px; }
+.arr small { font-weight: 600; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.lg .gapnote { padding-top: 0; }
+
+.editor { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.lockrow { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; font-weight: 600; cursor: pointer; }
+.lockrow input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); flex: none; }
+.lockrow span { color: var(--muted); font-weight: 500; display: block; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+
+
+.addrow { margin-top: 16px; }
+body:not(.editing) .edit-only { display: none !important; }
+body.editing .view-only { display: none !important; }
+
+/* Photo of a sight, flush with the top of its card */
+.photo { margin: -12px -14px 0; position: relative; border-radius: 14px 14px 0 0; overflow: hidden; background: var(--serenity-soft); aspect-ratio: 16 / 9; }
+.photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.photo a.credit { position: absolute; right: 8px; bottom: 8px; font-size: 10px; font-weight: 600; color: #fff; background: rgba(20, 24, 40, .55); padding: 2px 8px; border-radius: 99px; text-decoration: none; }
+.photo a.credit:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.stop.done .photo img { filter: grayscale(.6); }
+
+/* Read-only train legs */
+.legs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.legs li { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.legs .code { flex: none; min-width: 40px; font-size: 11px; font-weight: 700; color: var(--serenity-ink); background: var(--serenity-soft); border-radius: 6px; padding: 1px 6px; text-align: center; }
+.legs .nm { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.legs .tm { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+a.maplink { font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 11px; white-space: nowrap; align-self: center; }
+a.maplink:hover { background: var(--serenity-soft); }
+a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.fields a.maplink { margin-bottom: 7px; align-self: flex-end; }
+
+.pane { display: flex; flex-direction: column; gap: 28px; }
+.tabs { display: flex; gap: 4px; background: var(--serenity-soft); border-radius: 99px; padding: 4px; align-self: flex-start; }
+.tab { font: inherit; font-size: 14px; font-weight: 700; color: var(--serenity-ink); background: none; border: 0; border-radius: 99px; padding: 7px 18px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.tab:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
+.summary.two { grid-template-columns: repeat(2, 1fr); }
+.publegs { display: flex; flex-direction: column; gap: 6px; }
+.publeg { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.publeg .lt { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
+.pubmsg { white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 600; }
+
+@media (max-width: 420px) {
+  h1 { font-size: 28px; }
+  .stop { grid-template-columns: 64px 1fr; column-gap: 10px; }
+  .stat .v { font-size: 18px; }
+  .body { padding-left: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="pane" id="mePane">
+  <header>
+    <div class="eyebrow">Day trip itinerary</div>
+    <div class="hrow">
+      <h1 id="h1"></h1>
+      <button class="btn sm" id="planEdit" type="button" aria-expanded="false" aria-controls="tools">Edit plan</button>
+    </div>
+    <div class="route" id="routeTxt"></div>
+  </header>
+
+  <section class="summary" aria-label="Trip summary">
+    <div class="stat"><div class="k">Out the door</div><div class="v" id="outDoor"></div></div>
+    <div class="stat"><div class="k">Total fares</div><div class="v" id="sumTotal"></div></div>
+    <div class="stat"><div class="k">Home by</div><div class="v" id="homeBy"></div></div>
+  </section>
+
+  <section class="tools edit-only" id="tools" aria-label="Edit the plan">
+    <h2>Edit the plan</h2>
+    <div class="grid2">
+      <div class="f"><label for="hTitle">Trip name</label><input type="text" id="hTitle"></div>
+      <div class="f"><label for="hRoute">Route summary</label><input type="text" id="hRoute"></div>
+    </div>
+    <label class="switch" for="cascade"><input type="checkbox" id="cascade"><span>Move later stops when I change a time. They stop moving at the next stop marked as fixed.</span></label>
+    <div class="verdict" id="verdict"></div>
+    <div class="tools-foot">
+      <button class="btn pri" id="addTop" type="button">Add a stop at the end</button>
+      <button class="btn" id="reset" type="button">Clear checkmarks</button>
+      <button class="btn" id="planReset" type="button">Back to original plan</button>
+    </div>
+  </section>
+
+  <section class="progress" aria-label="Progress">
+    <div class="progress-row"><span id="progLabel"></span><span id="progPct"></span></div>
+    <div class="bar"><i id="progBar"></i></div>
+  </section>
+
+  <section>
+    <h2>The day</h2>
+    <ol class="timeline" id="timeline"></ol>
+    <div class="addrow edit-only"><button class="btn pri" id="addEnd" type="button">Add a stop</button></div>
+  </section>
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  /* ---------- helpers (times are minutes since midnight) ---------- */
+  function toMin(v) { var p = String(v).split(":"); return (+p[0]) * 60 + (+p[1] || 0); }
+  function toVal(m) { m = ((Math.round(m) % 1440) + 1440) % 1440; var h = Math.floor(m / 60), mm = m % 60; return (h < 10 ? "0" : "") + h + ":" + (mm < 10 ? "0" : "") + mm; }
+  function parts(m) {
+    m = ((Math.round(m) % 1440) + 1440) % 1440;
+    var h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? "PM" : "AM", h12 = h % 12 === 0 ? 12 : h % 12;
+    return { t: h12 + ":" + (mm < 10 ? "0" : "") + mm, ap: ap };
+  }
+  function fmt(m) { var p = parts(m); return p.t + " " + p.ap; }
+  function range(a, b) {
+    var pa = parts(a), pb = parts(b);
+    return pa.ap === pb.ap ? pa.t + " – " + pb.t + " " + pb.ap : pa.t + " " + pa.ap + " – " + pb.t + " " + pb.ap;
+  }
+  function durTxt(n) { if (n < 60) return n + " min"; var h = Math.floor(n / 60), m = n % 60; return h + " hr" + (m ? " " + m + " min" : ""); }
+  function yen(n) { return "¥" + Math.round(n).toLocaleString("en-US"); }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function inp(type) { var e = document.createElement("input"); e.type = type; return e; }
+  function field(label, ctrl, id, cls) {
+    var f = el("div", "f" + (cls ? " " + cls : "")); var l = el("label", null, label);
+    ctrl.id = id; l.setAttribute("for", id); f.appendChild(l); f.appendChild(ctrl); return f;
+  }
+  function setVal(input, v) { v = String(v); if (document.activeElement !== input && input.value !== v) input.value = v; }
+
+  /* Google Maps link built from a stop or leg name: "A to B" gives directions, "Bus to B" gives directions to B, anything else is a place search. */
+  function mapUrl(name, tag) {
+    var q = encodeURIComponent, st = tag === "Train" ? " Station" : "", base = "https://www.google.com/maps/";
+    name = name || "";
+    var b = /^bus\s+(?:back\s+)?to\s+(.+)$/i.exec(name);
+    if (b) return base + "dir/?api=1&travelmode=transit&destination=" + q(b[1] + ", Japan");
+    var m = /^(.+?)\s+to\s+(.+)$/i.exec(name);
+    if (m) return base + "dir/?api=1&travelmode=transit&origin=" + q(m[1] + st + ", Japan") + "&destination=" + q(m[2] + st + ", Japan");
+    return base + "search/?api=1&query=" + q(name + ", Japan");
+  }
+  function mapLink(href, text) {
+    var a = el("a", "maplink", text || "Open map"); a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; return a;
+  }
+
+  /* A stop's photo is one of: "scene:name" (built-in autumn illustration), an uploaded image path, an image URL, or a Wikimedia Commons file name. */
+  var AC = ["#c8442b", "#e06a2c", "#eb9a3a", "#f0c24a"];
+  function blobs(x, y, s, cols) {
+    var o = [[0, 0, 1], [-.75, .35, .8], [.75, .35, .8], [-.35, -.55, .7], [.4, -.6, .7], [0, .6, .75]], out = "";
+    cols = cols || AC;
+    o.forEach(function (p, i) { out += '<circle cx="' + Math.round(x + p[0] * s) + '" cy="' + Math.round(y + p[1] * s) + '" r="' + Math.round(p[2] * s) + '" fill="' + cols[(i + Math.round(x / 40)) % cols.length] + '"/>'; });
+    return out;
+  }
+  function maple(x, y, s) { return '<rect x="' + Math.round(x - s * .07) + '" y="' + y + '" width="' + Math.round(s * .14) + '" height="' + Math.round(s * 1.25) + '" fill="#5a3b2e"/>' + blobs(x, y, s); }
+  var SKY = '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5bf94"/><stop offset="1" stop-color="#fdf0e0"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/>';
+  var SCENES = {
+    lake: function () {
+      var row = ""; for (var x = 0; x <= 640; x += 56) row += blobs(x, 226, 30);
+      return SKY + '<path d="M-10 236 L120 150 L250 236Z" fill="#a9aec6"/><path d="M390 236 L520 156 L650 236Z" fill="#a9aec6"/>' +
+        '<path d="M130 236 L292 62 Q320 40 348 62 L510 236Z" fill="#7b8cb0"/><path d="M292 62 Q320 40 348 62 L372 90 L268 90Z" fill="#8f9fc0"/>' +
+        '<rect y="236" width="640" height="124" fill="#8db0d0"/><path d="M200 240 L320 340 L440 240Z" fill="#6a84a8" opacity=".5"/>' + row +
+        maple(70, 150, 70) + maple(572, 140, 78);
+    },
+    falls: function () {
+      return '<rect width="640" height="360" fill="#f3d9bd"/><path d="M0 150 Q160 90 320 130 T640 110 L640 360 L0 360Z" fill="#d9a35f"/>' +
+        '<path d="M0 100 L286 90 L292 330 L0 360Z" fill="#59606c"/><path d="M640 100 L354 90 L348 330 L640 360Z" fill="#59606c"/>' +
+        '<rect x="292" y="88" width="56" height="240" rx="6" fill="#fdfdff"/><rect x="304" y="88" width="10" height="240" fill="#dfe9f5"/><rect x="326" y="88" width="8" height="240" fill="#dfe9f5"/>' +
+        '<rect y="326" width="640" height="34" fill="#6f8eab"/><ellipse cx="320" cy="330" rx="100" ry="26" fill="#fff" opacity=".75"/>' +
+        blobs(50, 110, 64) + blobs(172, 96, 54) + blobs(468, 92, 56) + blobs(590, 112, 66) + maple(36, 232, 58) + maple(606, 240, 62);
+    },
+    bridge: function () {
+      return SKY + '<path d="M0 220 Q120 110 260 190 T520 160 T640 200 L640 262 L0 262Z" fill="#c9783a"/>' + blobs(180, 196, 44) + blobs(470, 190, 46) + blobs(330, 176, 36) +
+        '<rect y="262" width="640" height="98" fill="#6f8f93"/><path d="M140 292 Q320 346 500 292" fill="none" stroke="#b3261e" stroke-width="16" opacity=".35"/>' +
+        '<rect x="112" y="244" width="44" height="90" fill="#7d8088"/><rect x="484" y="244" width="44" height="90" fill="#7d8088"/>' +
+        '<path d="M120 252 Q320 120 520 252" fill="none" stroke="#b3261e" stroke-width="26" stroke-linecap="round"/><path d="M120 236 Q320 104 520 236" fill="none" stroke="#8c1b16" stroke-width="8"/>' +
+        maple(60, 140, 76) + maple(584, 132, 80);
+    },
+    road: function () {
+      return SKY + '<path d="M0 360 L0 130 Q200 40 400 90 T640 70 L640 360Z" fill="#d98a3b"/>' +
+        blobs(60, 190, 40) + blobs(580, 250, 44) + blobs(300, 180, 36) + blobs(120, 310, 40) + blobs(566, 160, 34) + blobs(340, 322, 36) + blobs(480, 110, 30) +
+        '<path d="M80 340 L540 300 L110 254 L520 214 L150 176 L470 140 L220 108" fill="none" stroke="#e9e1d4" stroke-width="16" stroke-linejoin="round"/>' +
+        '<path d="M80 340 L540 300 L110 254 L520 214 L150 176 L470 140 L220 108" fill="none" stroke="#b9ad98" stroke-width="2" stroke-dasharray="10 8" stroke-linejoin="round"/>';
+    },
+    forest: function () {
+      var lv = "", pts = [[90, 262], [150, 304], [240, 282], [400, 292], [470, 312], [560, 270], [330, 314], [200, 332], [60, 318], [600, 330]];
+      pts.forEach(function (p, i) { lv += '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="7" ry="4" fill="' + AC[i % 4] + '" transform="rotate(' + (i * 37 % 90) + ' ' + p[0] + ' ' + p[1] + ')"/>'; });
+      return SKY + '<rect y="300" width="640" height="60" fill="#d9a35f"/><path d="M250 360 L390 360 L338 196 L302 196Z" fill="#ecd2a1"/>' +
+        maple(112, 80, 108) + maple(520, 88, 116) + maple(236, 168, 58) + maple(420, 172, 54) + lv;
+    }
+  };
+  function sceneUri(name) {
+    var f = SCENES[name]; if (!f) return "";
+    return "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice">' + f() + '</svg>');
+  }
+  function photoSrc(p) {
+    if (/^scene:/.test(p)) return sceneUri(p.slice(6));
+    if (/^(https?:\/\/|\/)/i.test(p)) return p;
+    return "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(p.replace(/ /g, "_")) + "?width=960";
+  }
+  function creditFor(a, p) {
+    if (/^scene:/.test(p)) { a.textContent = "Autumn illustration"; a.removeAttribute("href"); }
+    else if (/^\//.test(p)) { a.textContent = "Your photo"; a.removeAttribute("href"); }
+    else if (/^https?:\/\//i.test(p)) { a.textContent = "Photo"; a.href = p; }
+    else { a.textContent = "Photo: Wikimedia Commons"; a.href = "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(p.replace(/ /g, "_")); }
+  }
+  var OLD_PHOTOS = ["Mount_nantai_and_lake_chuzenji.jpg", "Lake_chuzenji_and_kegon_waterfall.jpg", "Nikkō_Chūzen-ji_2026.jpg", "Shinkyo Bridge @ Nikko (13992273775).jpg"];
+  var PHOTOS = { s2: "scene:road", s4: "Mount_nantai_and_lake_chuzenji.jpg", s5: "Lake_chuzenji_and_kegon_waterfall.jpg", s7: "Nikkō_Chūzen-ji_2026.jpg", s9: "Shinkyo Bridge @ Nikko (13992273775).jpg" };
+  var FALLBACK = { s4: "lake", s5: "falls", s7: "forest", s9: "bridge" };
+  function photoFigure(p, alt) {
+    var f = el("figure", "photo"), im = el("img");
+    im.loading = "lazy"; im.decoding = "async"; im.alt = alt || "Photo"; im.src = photoSrc(p);
+    im.addEventListener("error", function () { f.hidden = true; });
+    var c = el("a", "credit"); creditFor(c, p); c.target = "_blank"; c.rel = "noopener noreferrer";
+    f.appendChild(im); f.appendChild(c); return f;
+  }
+
+  var TAGS = ["Train", "Bus", "Sights", "Food", "Arrival", "Other"];
+  function kind(s) { return s.tag === "Food" ? "food" : (s.tag === "Sights" || s.tag === "Arrival") ? "sight" : "move"; }
+
+  /* ---------- the original plan ---------- */
+  function defaults() {
+    var d = {
+      title: "Nikko Day Trip",
+      route: "Yako → Tobu-Nikko → Lake Chuzenji → Shinkyo Bridge → Asakusa → Keikyu Kawasaki",
+      cascade: true,
+      seq: 12,
+      stops: [
+        { id: "s1", title: "Yako to Tobu-Nikko", tag: "Train", cost: 2020, a: 278, dur: 211, note: "", alt: 330, lock: false, legs: [
+          { code: "JN", name: "Yako to Kawasaki", dep: 278, ride: 10 },
+          { code: "JK", name: "Kawasaki to Ueno", dep: 296, ride: 28 },
+          { code: "JJ", name: "Ueno to Kita-Senju", dep: 332, ride: 10 },
+          { code: "Tobu", name: "Kita-Senju to Tobu-Nikko", dep: 364, ride: 125 }
+        ] },
+        { id: "s2", title: "Bus to Chuzenji Onsen", tag: "Bus", cost: 1250, a: 514, dur: 46, note: "", alt: 498, lock: false, legs: null },
+        { id: "s3", title: "Arrive at Lake Chuzenji", tag: "Arrival", cost: 0, a: 560, dur: 10, note: "", alt: null, lock: false, legs: null },
+        { id: "s4", title: "Photos by the lake", tag: "Sights", cost: 0, a: 570, dur: 30, note: "", alt: null, lock: false, legs: null },
+        { id: "s5", title: "Kegon Falls", tag: "Sights", cost: 600, a: 600, dur: 60, note: "", alt: null, lock: false, legs: null },
+        { id: "s6", title: "Lunch around Chuzenji", tag: "Food", cost: 2000, a: 660, dur: 90, note: "", alt: null, lock: false, legs: null },
+        { id: "s7", title: "Sightseeing around Lake Chuzenji", tag: "Sights", cost: 0, a: 750, dur: 30, note: "", alt: null, lock: false, legs: null },
+        { id: "s8", title: "Bus to Shinkyo Bridge", tag: "Bus", cost: 1200, a: 795, dur: 30, note: "", alt: null, lock: true, legs: null },
+        { id: "s9", title: "Explore Tobu-Nikko", tag: "Sights", cost: 0, a: 825, dur: 135, note: "", alt: null, lock: false, legs: null },
+        { id: "s10", title: "Bus back to Tobu-Nikko", tag: "Bus", cost: 280, a: 960, dur: 30, note: "Quick souvenir and snack stop before the train.", alt: null, lock: false, legs: null },
+        { id: "s11", title: "Tobu-Nikko to Asakusa", tag: "Train", cost: 1393, a: 993, dur: 179, note: "", alt: null, lock: true, legs: null },
+        { id: "s12", title: "Asakusa to Keikyu Kawasaki", tag: "Train", cost: 549, a: 1185, dur: 38, note: "", alt: null, lock: true, legs: null }
+      ]
+    };
+    d.stops.forEach(function (s) { s.photo = PHOTOS[s.id] || ""; });
+    return d;
+  }
+  var baseStart = {};
+  defaults().stops.forEach(function (s) { baseStart[s.id] = s.legs ? s.legs[0].dep : s.a; });
+
+  /* ---------- storage ---------- */
+  var KEY = "nikko-day-trip-v2", KEY_DONE = "nikko-day-trip-done";
+  function num(x) { return typeof x === "number" && isFinite(x); }
+  function validStop(s) {
+    return s && typeof s.id === "string" && typeof s.title === "string" && num(s.a) && num(s.dur) &&
+      (!s.legs || (Array.isArray(s.legs) && s.legs.length > 0 && s.legs.every(function (l) { return l && num(l.dep) && num(l.ride); })));
+  }
+  function load() {
+    var d = defaults();
+    try {
+      var raw = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (raw && Array.isArray(raw.stops) && raw.stops.every(validStop)) {
+        d.title = String(raw.title || d.title); d.route = String(raw.route == null ? d.route : raw.route);
+        d.cascade = raw.cascade !== false;
+        d.stops = raw.stops.map(function (s) {
+          return { id: s.id, title: s.title, tag: TAGS.indexOf(s.tag) >= 0 ? s.tag : "Other", cost: num(s.cost) ? s.cost : 0, a: s.a, dur: Math.max(0, s.dur),
+            note: typeof s.note === "string" ? s.note : "", photo: (raw.pv !== 2 && (!s.photo || OLD_PHOTOS.indexOf(s.photo) >= 0)) ? (PHOTOS[s.id] || "") : (typeof s.photo === "string" ? s.photo : ""), alt: num(s.alt) ? s.alt : null, lock: !!s.lock,
+            legs: s.legs ? s.legs.map(function (l) { return { code: String(l.code || ""), name: String(l.name || ""), dep: l.dep, ride: Math.max(1, l.ride) }; }) : null };
+        });
+        d.stops.forEach(function (s) { sync(s); });
+      }
+    } catch (e) {}
+    var mx = 0;
+    d.stops.forEach(function (s) { var m = /^s(\d+)$/.exec(s.id); if (m) mx = Math.max(mx, +m[1]); });
+    d.seq = Math.max(mx, num(d.seq) ? d.seq : 0);
+    return d;
+  }
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY_DONE) || "{}") || {}; } catch (e) { done = {}; }
+  function saveAll() {
+    try { localStorage.setItem(KEY, JSON.stringify({ pv: 2, title: data.title, route: data.route, cascade: data.cascade, seq: data.seq, stops: data.stops })); } catch (e) {}
+    try { localStorage.setItem(KEY_DONE, JSON.stringify(done)); } catch (e) {}
+  }
+
+  /* ---------- schedule model ---------- */
+  function startOf(s) { return s.legs ? s.legs[0].dep : s.a; }
+  function endOf(s) { if (s.legs) { var l = s.legs[s.legs.length - 1]; return l.dep + l.ride; } return s.a + s.dur; }
+  function sync(s) { if (s.legs) { s.a = s.legs[0].dep; s.dur = Math.max(0, endOf(s) - s.a); } }
+  function shiftStop(s, d) {
+    if (s.legs) s.legs.forEach(function (l) { l.dep += d; }); else s.a += d;
+    if (s.alt != null) s.alt += d;
+    sync(s);
+  }
+  /* Move every stop after index i by d minutes, stopping at the first fixed stop. */
+  function cascade(i, d) {
+    if (!data.cascade || !d) return;
+    for (var j = i + 1; j < data.stops.length; j++) {
+      if (data.stops[j].lock) break;
+      shiftStop(data.stops[j], d);
+    }
+  }
+  function setStart(i, m) {
+    var s = data.stops[i], d = m - startOf(s);
+    if (!d) return;
+    if (s.legs) s.legs.forEach(function (l) { l.dep += d; }); else s.a = m;
+    sync(s);
+    cascade(i, d);
+  }
+  function setEnd(i, m) {
+    var s = data.stops[i], old = endOf(s);
+    if (s.legs) { var last = s.legs[s.legs.length - 1]; last.ride = Math.max(1, m - last.dep); }
+    else s.dur = Math.max(0, m - s.a);
+    sync(s);
+    cascade(i, endOf(s) - old);
+  }
+  function setDur(i, n) { setEnd(i, startOf(data.stops[i]) + n); }
+  function moveTo(s, m) { var d = m - startOf(s); if (d) shiftStop(s, d); }
+  function swap(i) {
+    var st = data.stops, p = st[i], q = st[i + 1];
+    var gap = startOf(q) - endOf(p), ps = startOf(p);
+    st[i] = q; st[i + 1] = p;
+    moveTo(q, ps); moveTo(p, endOf(q) + gap);
+  }
+
+  /* ---------- state and DOM refs ---------- */
+  var data = load();
+  var openId = null;
+  var views = {};
+  var tl = document.getElementById("timeline");
+
+  /* ---------- building one stop ---------- */
+  function buildStop(s) {
+    var v = {}; views[s.id] = v;
+    var li = el("li", "stop"); v.li = li;
+    var when = el("div", "when"); v.when = when;
+    v.t = el("div", "t"); v.alt = el("div", "alt");
+    when.appendChild(v.t); when.appendChild(v.alt); li.appendChild(when);
+
+    var body = el("div", "body");
+    body.appendChild(el("span", "dot"));
+    var card = el("div", "card");
+
+    v.photo = el("figure", "photo");
+    v.img = el("img"); v.img.loading = "lazy"; v.img.decoding = "async";
+    v.img.addEventListener("error", function () {
+      var fb = FALLBACK[s.id];
+      if (fb && v.failedFor !== s.photo && !/^scene:/.test(s.photo)) { v.failedFor = s.photo; v.img.src = sceneUri(fb); creditFor(v.credit, "scene:" + fb); }
+      else v.photo.hidden = true;
+    });
+    v.credit = el("a", "credit", "Photo: Wikimedia Commons"); v.credit.target = "_blank"; v.credit.rel = "noopener noreferrer";
+    v.photo.appendChild(v.img); v.photo.appendChild(v.credit);
+    card.appendChild(v.photo);
+
+    var top = el("div", "top");
+    var cb = inp("checkbox"); cb.className = "chk"; cb.id = "chk-" + s.id; v.cb = cb;
+    cb.addEventListener("change", function () {
+      if (cb.checked) done[s.id] = 1; else delete done[s.id];
+      saveAll(); refresh();
+    });
+    v.label = el("label", "title"); v.label.setAttribute("for", cb.id);
+    v.editBtn = el("button", "btn sm edit-only", "Edit"); v.editBtn.type = "button";
+    v.editBtn.addEventListener("click", function () { setOpen(s.id); });
+    top.appendChild(cb); top.appendChild(v.label); top.appendChild(v.editBtn);
+    card.appendChild(top);
+
+    v.meta = el("div", "meta"); card.appendChild(v.meta);
+
+    v.legUI = [];
+    if (s.legs) {
+      v.legList = el("ul", "legs view-only"); card.appendChild(v.legList);
+      var box = el("div", "lgbox edit-only");
+      s.legs.forEach(function (leg) {
+        var k = s.legs.indexOf(leg);
+        var row = el("div", "lg");
+        var rt = el("div", "lg-top");
+        var code = inp("text"); code.maxLength = 6; code.setAttribute("aria-label", "Line code");
+        var name = inp("text"); name.setAttribute("aria-label", "Leg name");
+        var cf = field("Line", code, "lc-" + s.id + "-" + k, "code");
+        var nf = field("Leg", name, "ln-" + s.id + "-" + k, "lname");
+        rt.appendChild(cf); rt.appendChild(nf); row.appendChild(rt);
+
+        var fl = el("div", "fields");
+        var dep = inp("time"); dep.step = 60;
+        var ride = inp("number"); ride.min = 1; ride.max = 599; ride.inputMode = "numeric";
+        var arr = el("div", "arr");
+        var rm = el("button", "btn sm", "Remove leg"); rm.type = "button";
+        fl.appendChild(field("Departs", dep, "ld-" + s.id + "-" + k, "tm"));
+        fl.appendChild(field("Ride (min)", ride, "lr-" + s.id + "-" + k, "rd"));
+        var ml = mapLink("#");
+        fl.appendChild(arr); fl.appendChild(ml); fl.appendChild(rm);
+        row.appendChild(fl);
+        var gap = el("div", "gapnote");
+        row.appendChild(gap);
+        box.appendChild(row);
+
+        code.addEventListener("input", function () { leg.code = code.value; refresh(); });
+        name.addEventListener("input", function () { leg.name = name.value; refresh(); });
+        dep.addEventListener("input", function () {
+          if (!dep.value) return;
+          var i = data.stops.indexOf(s), old = endOf(s);
+          leg.dep = toMin(dep.value); sync(s); cascade(i, endOf(s) - old); refresh();
+        });
+        ride.addEventListener("input", function () {
+          var n = parseInt(ride.value, 10); if (!(n > 0 && n < 600)) return;
+          var i = data.stops.indexOf(s), old = endOf(s);
+          leg.ride = n; sync(s); cascade(i, endOf(s) - old); refresh();
+        });
+        rm.addEventListener("click", function () {
+          var i = data.stops.indexOf(s), old = endOf(s);
+          if (s.legs.length === 1) { s.a = leg.dep; s.dur = leg.ride; s.legs = null; }
+          else { s.legs.splice(s.legs.indexOf(leg), 1); sync(s); }
+          cascade(i, endOf(s) - old); render();
+        });
+        v.legUI.push({ code: code, name: name, dep: dep, ride: ride, arr: arr, gap: gap, map: ml });
+      });
+      card.appendChild(box);
+    }
+
+    v.note = el("p", "note"); card.appendChild(v.note);
+    card.appendChild(buildEditor(s, v));
+    body.appendChild(card);
+    v.gap = el("div", "gapnote edit-only"); body.appendChild(v.gap);
+    li.appendChild(body);
+    tl.appendChild(li);
+  }
+
+  function buildEditor(s, v) {
+    var ed = el("div", "editor"); v.ed = ed;
+    ed.hidden = s.id !== openId;
+    v.editBtn.textContent = s.id === openId ? "Close" : "Edit";
+    v.editBtn.setAttribute("aria-expanded", s.id === openId ? "true" : "false");
+    var id = function (n) { return "e-" + s.id + "-" + n; };
+    function idx() { return data.stops.indexOf(s); }
+
+    var g = el("div", "grid2");
+    v.edTitle = inp("text");
+    var fTitle = field("Name", v.edTitle, id("title"), "span");
+    v.edTag = el("select");
+    TAGS.forEach(function (t) { var o = el("option", null, t); o.value = t; v.edTag.appendChild(o); });
+    v.edCost = inp("number"); v.edCost.min = 0; v.edCost.step = 10; v.edCost.inputMode = "numeric";
+    v.edStart = inp("time"); v.edStart.step = 60;
+    v.edDur = inp("number"); v.edDur.min = 0; v.edDur.max = 1439; v.edDur.inputMode = "numeric";
+    v.edEnd = inp("time"); v.edEnd.step = 60;
+    v.edAlt = inp("time"); v.edAlt.step = 60;
+    v.edNote = inp("text");
+    v.edPhoto = inp("text"); v.edPhoto.placeholder = "Image URL or Wikimedia Commons file name";
+    g.appendChild(fTitle);
+    g.appendChild(field("Type", v.edTag, id("tag")));
+    g.appendChild(field("Cost (¥)", v.edCost, id("cost")));
+    g.appendChild(field("Starts", v.edStart, id("start")));
+    g.appendChild(field("Duration (min)", v.edDur, id("dur")));
+    g.appendChild(field(s.legs ? "Arrives" : "Ends", v.edEnd, id("end")));
+    g.appendChild(field("Alternate time (optional)", v.edAlt, id("alt")));
+    g.appendChild(field("Note", v.edNote, id("note"), "span"));
+    g.appendChild(field("Photo (optional)", v.edPhoto, id("photo"), "span"));
+    ed.appendChild(g);
+
+    var lr = el("label", "lockrow"); lr.setAttribute("for", id("lock"));
+    v.edLock = inp("checkbox"); v.edLock.id = id("lock");
+    var lt = el("div"); lt.appendChild(document.createTextNode("Keep this stop fixed"));
+    lt.appendChild(el("span", null, "Changes to earlier stops will not move it, or anything after it."));
+    lr.appendChild(v.edLock); lr.appendChild(lt); ed.appendChild(lr);
+
+    var br = el("div", "btnrow");
+    v.btnLeg = el("button", "btn sm", s.legs ? "Add train leg" : "Split into train legs");
+    v.btnAdd = el("button", "btn sm", "Add stop after");
+    v.btnUp = el("button", "btn sm", "Move up");
+    v.btnDown = el("button", "btn sm", "Move down");
+    v.btnDel = el("button", "btn sm warn", "Delete stop");
+    v.btnDone = el("button", "btn sm pri", "Done");
+    [v.btnLeg, v.btnAdd, v.btnUp, v.btnDown, v.btnDel, v.btnDone].forEach(function (b) { b.type = "button"; br.appendChild(b); });
+    ed.appendChild(br);
+
+    v.edTitle.addEventListener("input", function () { s.title = v.edTitle.value; refresh(); });
+    v.edTag.addEventListener("change", function () { s.tag = v.edTag.value; refresh(); });
+    v.edCost.addEventListener("input", function () { var n = parseFloat(v.edCost.value); s.cost = n >= 0 ? n : 0; refresh(); });
+    v.edNote.addEventListener("input", function () { s.note = v.edNote.value; refresh(); });
+    v.edPhoto.addEventListener("change", function () { s.photo = v.edPhoto.value.trim().replace(/^File:/i, ""); refresh(); });
+    v.edStart.addEventListener("input", function () { if (v.edStart.value) { setStart(idx(), toMin(v.edStart.value)); refresh(); } });
+    v.edEnd.addEventListener("input", function () {
+      if (!v.edEnd.value) return;
+      var st = startOf(s), m = toMin(v.edEnd.value);
+      if (m < st) m += 1440;
+      setEnd(idx(), m); refresh();
+    });
+    v.edDur.addEventListener("input", function () { var n = parseInt(v.edDur.value, 10); if (n >= 0 && n < 1440) { setDur(idx(), n); refresh(); } });
+    v.edAlt.addEventListener("input", function () { s.alt = v.edAlt.value ? toMin(v.edAlt.value) : null; refresh(); });
+    v.edLock.addEventListener("change", function () { s.lock = v.edLock.checked; refresh(); });
+
+    v.btnLeg.addEventListener("click", function () {
+      var i = idx();
+      if (!s.legs) {
+        s.legs = [{ code: "", name: s.title, dep: s.a, ride: Math.max(1, s.dur) }]; sync(s);
+      } else {
+        var old = endOf(s), last = s.legs[s.legs.length - 1];
+        s.legs.push({ code: "", name: "New train", dep: last.dep + last.ride + 5, ride: 15 });
+        sync(s); cascade(i, endOf(s) - old);
+      }
+      render();
+    });
+    v.btnAdd.addEventListener("click", function () { addAfter(idx()); });
+    v.btnUp.addEventListener("click", function () { var i = idx(); if (i > 0) { swap(i - 1); render(); } });
+    v.btnDown.addEventListener("click", function () { var i = idx(); if (i < data.stops.length - 1) { swap(i); render(); } });
+    v.btnDone.addEventListener("click", function () { setOpen(s.id); });
+    var armed = false, timer = null;
+    v.btnDel.addEventListener("click", function () {
+      if (!armed) {
+        armed = true; v.btnDel.textContent = "Tap again to delete";
+        timer = setTimeout(function () { armed = false; v.btnDel.textContent = "Delete stop"; }, 3000);
+        return;
+      }
+      clearTimeout(timer);
+      var i = idx();
+      cascade(i, -(endOf(s) - startOf(s)));
+      data.stops.splice(i, 1);
+      delete done[s.id];
+      if (openId === s.id) openId = null;
+      render();
+    });
+    return ed;
+  }
+
+  function setOpen(id) {
+    openId = openId === id ? null : id;
+    data.stops.forEach(function (s) {
+      var v = views[s.id], on = s.id === openId;
+      v.ed.hidden = !on;
+      v.editBtn.textContent = on ? "Close" : "Edit";
+      v.editBtn.setAttribute("aria-expanded", on ? "true" : "false");
+    });
+  }
+
+  function addAfter(i) {
+    var prev = data.stops[i];
+    var st = prev ? endOf(prev) : 9 * 60;
+    var s = { id: "s" + (++data.seq), title: "New stop", tag: "Sights", cost: 0, a: st, dur: 30, note: "", photo: "", alt: null, lock: false, legs: null };
+    data.stops.splice(i + 1, 0, s);
+    cascade(i + 1, 30);
+    openId = s.id;
+    render();
+    setTimeout(function () {
+      var t = document.getElementById("e-" + s.id + "-title");
+      if (t) { t.focus(); t.select(); if (t.scrollIntoView) t.scrollIntoView({ block: "center" }); }
+    }, 0);
+  }
+
+  /* ---------- refresh: recompute and update values in place (keeps typing focus) ---------- */
+  function refresh() {
+    var stops = data.stops, n = stops.length, issues = [];
+
+    stops.forEach(function (s, i) {
+      var v = views[s.id]; if (!v) return;
+      var st = startOf(s), en = endOf(s);
+      v.li.className = "stop k-" + kind(s) + (done[s.id] ? " done" : "");
+      v.when.className = "when" + (baseStart[s.id] != null && baseStart[s.id] !== st ? " moved" : "");
+      v.t.textContent = en > st ? range(st, en) : fmt(st);
+      v.alt.textContent = s.alt != null ? "Alt " + fmt(s.alt) : "";
+      v.label.textContent = s.title || "Untitled stop";
+      v.cb.checked = !!done[s.id];
+      v.cb.setAttribute("aria-label", "Mark done: " + (s.title || "Untitled stop"));
+
+      v.meta.innerHTML = "";
+      v.meta.appendChild(el("span", "chip" + (s.tag === "Food" ? " food" : ""), s.tag));
+      if (en > st) v.meta.appendChild(el("span", "chip", durTxt(en - st)));
+      if (s.lock) v.meta.appendChild(el("span", "chip fixed edit-only", "Fixed time"));
+      if (!s.legs) v.meta.appendChild(mapLink(mapUrl(s.title, s.tag), s.tag === "Train" || s.tag === "Bus" ? "Route map" : "Open map"));
+      if (s.cost > 0) v.meta.appendChild(el("span", "fare", yen(s.cost)));
+
+      if (s.legs) {
+        s.legs.forEach(function (leg, k) {
+          var u = v.legUI[k]; if (!u) return;
+          setVal(u.code, leg.code); setVal(u.name, leg.name);
+          setVal(u.dep, toVal(leg.dep)); setVal(u.ride, leg.ride);
+          u.map.href = mapUrl(leg.name, "Train");
+          u.arr.innerHTML = "";
+          u.arr.appendChild(el("small", null, "Arrives"));
+          u.arr.appendChild(document.createTextNode(fmt(leg.dep + leg.ride)));
+          if (k < s.legs.length - 1) {
+            var nx = s.legs[k + 1], w = nx.dep - (leg.dep + leg.ride);
+            u.gap.className = "gapnote" + (w < 0 ? " bad" : "");
+            u.gap.textContent = w < 0 ? "The next train leaves " + (-w) + " min before you arrive." : "Transfer wait: " + w + " min";
+            if (w < 0) issues.push((nx.name || "A train") + " leaves " + (-w) + " min before the previous train arrives.");
+          } else { u.gap.textContent = ""; u.gap.className = "gapnote"; }
+        });
+      }
+
+      v.note.textContent = s.note; v.note.hidden = !s.note;
+
+      if (s.photo) {
+        var useFb = v.failedFor === s.photo && FALLBACK[s.id];
+        var src = useFb ? sceneUri(FALLBACK[s.id]) : photoSrc(s.photo);
+        if (v.img.getAttribute("src") !== src) { v.photo.hidden = false; v.img.src = src; }
+        v.img.alt = s.title || "Photo";
+        creditFor(v.credit, useFb ? "scene:" + FALLBACK[s.id] : s.photo);
+      } else { v.photo.hidden = true; v.img.removeAttribute("src"); }
+
+      if (v.legList) {
+        v.legList.innerHTML = "";
+        s.legs.forEach(function (leg) {
+          var r = el("li");
+          if (leg.code) r.appendChild(el("span", "code", leg.code));
+          r.appendChild(el("span", "nm", leg.name));
+          r.appendChild(el("span", "tm", range(leg.dep, leg.dep + leg.ride)));
+          v.legList.appendChild(r);
+        });
+      }
+
+      setVal(v.edTitle, s.title); v.edTag.value = s.tag; setVal(v.edCost, s.cost);
+      setVal(v.edStart, toVal(st)); setVal(v.edDur, en - st); setVal(v.edEnd, toVal(en));
+      setVal(v.edAlt, s.alt != null ? toVal(s.alt) : ""); setVal(v.edNote, s.note); setVal(v.edPhoto, s.photo);
+      v.edLock.checked = !!s.lock;
+      v.btnUp.disabled = i === 0; v.btnDown.disabled = i === n - 1;
+
+      if (i < n - 1) {
+        var nxt = stops[i + 1], g = startOf(nxt) - en;
+        if (g < 0) {
+          v.gap.className = "gapnote bad";
+          v.gap.textContent = "Overlaps the next stop by " + (-g) + " min";
+          issues.push((s.title || "A stop") + " ends " + (-g) + " min after " + (nxt.title || "the next stop") + " starts.");
+        } else {
+          v.gap.className = "gapnote";
+          v.gap.textContent = g > 0 ? g + " min free before the next stop" : "Next stop starts right away";
+        }
+      } else { v.gap.className = "gapnote"; v.gap.textContent = ""; }
+    });
+
+    /* summary */
+    document.getElementById("h1").textContent = data.title || "Untitled trip";
+    document.getElementById("routeTxt").textContent = data.route; document.getElementById("routeTxt").hidden = !data.route;
+    var total = stops.reduce(function (a, s) { return a + (s.cost || 0); }, 0);
+    document.getElementById("outDoor").textContent = n ? fmt(startOf(stops[0])) : "–";
+    document.getElementById("homeBy").textContent = n ? fmt(endOf(stops[n - 1])) : "–";
+    document.getElementById("sumTotal").textContent = yen(total);
+
+    var ve = document.getElementById("verdict");
+    ve.innerHTML = "";
+    if (!n) { ve.className = "verdict"; ve.appendChild(el("span", null, "No stops yet. Add the first one to start planning.")); }
+    else if (issues.length) {
+      ve.className = "verdict bad";
+      ve.appendChild(el("strong", null, issues.length === 1 ? "1 clash to fix" : issues.length + " clashes to fix"));
+      issues.forEach(function (t) { ve.appendChild(el("span", null, t)); });
+    } else {
+      ve.className = "verdict";
+      var s1 = el("span"); s1.appendChild(document.createTextNode("No clashes. You are home by ")); s1.appendChild(el("strong", null, fmt(endOf(stops[n - 1])))); s1.appendChild(document.createTextNode("."));
+      ve.appendChild(s1);
+    }
+
+    /* progress */
+    var c = 0; stops.forEach(function (s) { if (done[s.id]) c++; });
+    var pct = n ? Math.round(c / n * 100) : 0;
+    document.getElementById("progLabel").textContent = c + " of " + n + " stops done";
+    document.getElementById("progPct").textContent = pct + "%";
+    document.getElementById("progBar").style.width = pct + "%";
+
+    saveAll();
+  }
+
+  function render() {
+    tl.innerHTML = ""; views = {};
+    data.stops.forEach(buildStop);
+    refresh();
+  }
+
+  /* ---------- page controls ---------- */
+  var hTitle = document.getElementById("hTitle"), hRoute = document.getElementById("hRoute");
+  hTitle.value = data.title; hRoute.value = data.route;
+  hTitle.addEventListener("input", function () { data.title = hTitle.value; refresh(); });
+  hRoute.addEventListener("input", function () { data.route = hRoute.value; refresh(); });
+  document.getElementById("planEdit").addEventListener("click", function () {
+    var on = document.body.classList.toggle("editing"), b = document.getElementById("planEdit");
+    b.textContent = on ? "Done editing" : "Edit plan";
+    b.setAttribute("aria-expanded", on ? "true" : "false");
+    b.classList.toggle("pri", on);
+    if (!on && openId) setOpen(openId);
+  });
+
+  var cas = document.getElementById("cascade");
+  cas.checked = data.cascade;
+  cas.addEventListener("change", function () { data.cascade = cas.checked; saveAll(); });
+
+  document.getElementById("addTop").addEventListener("click", function () { addAfter(data.stops.length - 1); });
+  document.getElementById("addEnd").addEventListener("click", function () { addAfter(data.stops.length - 1); });
+
+  var pr = document.getElementById("planReset"), prArmed = false, prTimer = null;
+  pr.addEventListener("click", function () {
+    if (!prArmed) {
+      prArmed = true; pr.textContent = "Tap again to replace your edits";
+      prTimer = setTimeout(function () { prArmed = false; pr.textContent = "Back to original plan"; }, 3000);
+      return;
+    }
+    clearTimeout(prTimer); prArmed = false; pr.textContent = "Back to original plan";
+    data = defaults(); openId = null;
+    hTitle.value = data.title; hRoute.value = data.route; cas.checked = data.cascade;
+    render();
+  });
+
+  document.getElementById("reset").addEventListener("click", function () { done = {}; saveAll(); refresh(); });
+
+  render();
+})();
+</script>
+</body>
+</html>
