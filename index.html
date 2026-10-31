@@ -219,10 +219,30 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
 </style>
 
+<script>
+/* ===== EDIT THIS BLOCK: paste the web app config from your Firebase project (see README.md) ===== */
+window.NIKKO_CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyBQ6k-YbUcRFm-4_Y-6A8ak-A5xoIxoPu4",
+    authDomain: "jpnwithme-e9673.firebaseapp.com",
+    databaseURL: "https://jpnwithme-e9673-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jpnwithme-e9673",
+    appId: "1:116464437314:web:20d945e945c92ad52c05db",
+  },
+  path: "itinerary"
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="pane" id="mePane">
+  <div class="tabs" id="tabs" role="tablist" aria-label="Who is this view for">
+    <button class="tab" id="tabMe" type="button" role="tab" aria-controls="mePane" aria-selected="true">Only me</button>
+    <button class="tab" id="tabAll" type="button" role="tab" aria-controls="allPane" aria-selected="false">Everyone</button>
+  </div>
+
+  <div class="pane" id="mePane" role="tabpanel" aria-labelledby="tabMe" hidden>
   <header>
     <div class="eyebrow">Day trip itinerary</div>
     <div class="hrow">
@@ -236,6 +256,20 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
     <div class="stat"><div class="k">Out the door</div><div class="v" id="outDoor"></div></div>
     <div class="stat"><div class="k">Total fares</div><div class="v" id="sumTotal"></div></div>
     <div class="stat"><div class="k">Home by</div><div class="v" id="homeBy"></div></div>
+  </section>
+
+  <section class="tools" id="pubCard" aria-label="Share with everyone">
+    <h2>Share with everyone</h2>
+    <p class="hint">Your edits stay on this device until you press Publish to everyone. Publishing replaces the itinerary on the Everyone tab for everyone who has the link.</p>
+    <div class="grid2">
+      <div class="f"><label for="pubName">Your name (optional)</label><input type="text" id="pubName" maxlength="60" autocomplete="name"></div>
+    </div>
+    <div class="f"><label for="pubMsg">Message for everyone (optional)</label><input type="text" id="pubMsg" maxlength="300" placeholder="Anything they should know before the day"></div>
+    <div class="verdict" id="pubStatus"></div>
+    <div class="tools-foot">
+      <button class="btn pri" id="pubBtn" type="button">Publish to everyone</button>
+      <button class="btn" id="loadBtn" type="button">Start from the shared plan</button>
+    </div>
   </section>
 
   <section class="tools edit-only" id="tools" aria-label="Edit the plan">
@@ -266,6 +300,9 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
 
   </div>
 
+  <div class="pane" id="allPane" role="tabpanel" aria-labelledby="tabAll">
+    <div class="pane" id="pubView"></div>
+  </div>
 </div>
 
 <script>
@@ -370,10 +407,14 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
   var OLD_PHOTOS = ["Mount_nantai_and_lake_chuzenji.jpg", "Lake_chuzenji_and_kegon_waterfall.jpg", "Nikkō_Chūzen-ji_2026.jpg", "Shinkyo Bridge @ Nikko (13992273775).jpg"];
   var PHOTOS = { s2: "scene:road", s4: "Mount_nantai_and_lake_chuzenji.jpg", s5: "Lake_chuzenji_and_kegon_waterfall.jpg", s7: "Nikkō_Chūzen-ji_2026.jpg", s9: "Shinkyo Bridge @ Nikko (13992273775).jpg" };
   var FALLBACK = { s4: "lake", s5: "falls", s7: "forest", s9: "bridge" };
-  function photoFigure(p, alt) {
+  function photoFigure(p, alt, fb) {
     var f = el("figure", "photo"), im = el("img");
     im.loading = "lazy"; im.decoding = "async"; im.alt = alt || "Photo"; im.src = photoSrc(p);
-    im.addEventListener("error", function () { f.hidden = true; });
+    var tried = false;
+    im.addEventListener("error", function () {
+      if (fb && !tried && !/^scene:/.test(p)) { tried = true; im.src = sceneUri(fb); creditFor(c, "scene:" + fb); }
+      else f.hidden = true;
+    });
     var c = el("a", "credit"); creditFor(c, p); c.target = "_blank"; c.rel = "noopener noreferrer";
     f.appendChild(im); f.appendChild(c); return f;
   }
@@ -819,6 +860,7 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
     document.getElementById("progBar").style.width = pct + "%";
 
     saveAll();
+    pubStatus();
   }
 
   function render() {
@@ -862,7 +904,208 @@ a.maplink:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; }
 
   document.getElementById("reset").addEventListener("click", function () { done = {}; saveAll(); refresh(); });
 
+  /* ---------- Everyone tab: Firebase Realtime Database ---------- */
+  var cfg = window.NIKKO_CONFIG || {}, fbCfg = cfg.firebase || {}, PATH = cfg.path || "itinerary";
+  var configured = !!(fbCfg.apiKey && !/^PASTE/i.test(fbCfg.apiKey) && /^https:\/\//.test(fbCfg.databaseURL || ""));
+  var hadLocal = false; try { hadLocal = !!localStorage.getItem(KEY); } catch (e) {}
+  var tabsEl = document.getElementById("tabs"), tabMe = document.getElementById("tabMe"), tabAll = document.getElementById("tabAll");
+  var mePane = document.getElementById("mePane"), allPane = document.getElementById("allPane");
+  var pubMsg = document.getElementById("pubMsg"), pubName = document.getElementById("pubName");
+  var pubStatusEl = document.getElementById("pubStatus"), pubBtn = document.getElementById("pubBtn"), loadBtn = document.getElementById("loadBtn"), pubView = document.getElementById("pubView");
+  var db = null, pub = null, pubState = configured ? "loading" : "setup", pubBusy = false, pubErr = "", msgTouched = false, adopted = false;
+  try { pubName.value = localStorage.getItem("nikko-day-trip-name") || ""; } catch (e) {}
+
+  function twoTap(btn, idle, armedText, fn) {
+    var armed = false, t = null;
+    btn.addEventListener("click", function () {
+      if (!armed) { armed = true; btn.textContent = armedText; t = setTimeout(function () { armed = false; btn.textContent = idle; }, 3000); return; }
+      clearTimeout(t); armed = false; btn.textContent = idle; fn();
+    });
+  }
+  /* The Realtime Database drops empty values and turns arrays into objects, and what it returns is other people's input: check every field. */
+  function arr(x) {
+    if (Array.isArray(x)) return x.filter(function (v) { return v != null; });
+    if (x && typeof x === "object") return Object.keys(x).sort(function (p, q) { return (+p) - (+q); }).map(function (k) { return x[k]; });
+    return [];
+  }
+  function str(x, n) { return String(x == null ? "" : x).slice(0, n); }
+  function cleanPub(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var out = { title: str(raw.title, 120), route: str(raw.route, 300), message: str(raw.message, 300), at: str(raw.publishedAt, 40), by: str(raw.by, 60), stops: [] };
+    var seen = {};
+    arr(raw.stops).slice(0, 60).forEach(function (st, i) {
+      if (!st || !num(st.a) || !num(st.dur)) return;
+      var id = str(st.id, 20).replace(/[^A-Za-z0-9_-]/g, "") || "x" + i;
+      if (seen[id]) id += "_" + i; seen[id] = 1;
+      var legs = arr(st.legs).filter(function (l) { return l && num(l.dep) && num(l.ride); }).slice(0, 12).map(function (l) {
+        return { code: str(l.code, 6), name: str(l.name, 120), dep: l.dep, ride: Math.max(1, l.ride) };
+      });
+      var s = { id: id, title: str(st.title, 200), tag: TAGS.indexOf(st.tag) >= 0 ? st.tag : "Other", cost: num(st.cost) && st.cost >= 0 ? st.cost : 0,
+        a: st.a, dur: Math.max(0, st.dur), note: str(st.note, 500), photo: str(st.photo, 600), alt: num(st.alt) ? st.alt : null, lock: !!st.lock, legs: legs.length ? legs : null };
+      sync(s); out.stops.push(s);
+    });
+    return out;
+  }
+  function snapshot(msg) {
+    return { title: data.title || "", route: data.route || "", message: msg, stops: data.stops.map(function (s) {
+      return { id: s.id, title: s.title || "", tag: s.tag, cost: s.cost || 0, a: startOf(s), dur: endOf(s) - startOf(s), note: s.note || "", photo: s.photo || "",
+        alt: s.alt == null ? null : s.alt, lock: !!s.lock,
+        legs: s.legs ? s.legs.map(function (l) { return { code: l.code || "", name: l.name || "", dep: l.dep, ride: l.ride }; }) : null };
+    }) };
+  }
+  function keyOf(c) {
+    return JSON.stringify([c.title, c.route, c.message, c.stops.map(function (s) {
+      return [s.id, s.title, s.tag, s.cost, s.a, s.dur, s.note, s.photo, s.alt, s.lock, s.legs ? s.legs.map(function (l) { return [l.code, l.name, l.dep, l.ride]; }) : null];
+    })]);
+  }
+  /* Copy the shared plan into this person's Only me draft. */
+  function adoptShared() {
+    if (!pub) return;
+    data.title = pub.title || data.title; data.route = pub.route;
+    data.stops = JSON.parse(JSON.stringify(pub.stops));
+    var mx = 0; data.stops.forEach(function (s) { var m = /^s(\d+)$/.exec(s.id); if (m) mx = Math.max(mx, +m[1]); });
+    data.seq = Math.max(mx, data.stops.length, data.seq || 0);
+    openId = null; hTitle.value = data.title; hRoute.value = data.route;
+    render();
+  }
+
+  function renderPub() {
+    pubView.innerHTML = "";
+    if (pubState !== "ready" || !pub) {
+      var msgs = {
+        loading: "Loading the shared itinerary…",
+        setup: "Sharing is not set up yet. The person who hosts this page needs to paste their Firebase details at the top of index.html.",
+        empty: "Nothing has been shared yet. Open Only me, plan the day and press Publish to everyone.",
+        error: "The shared itinerary did not load. Check your connection and reload the page."
+      };
+      pubView.appendChild(el("div", "verdict", msgs[pubState] || msgs.error));
+      return;
+    }
+    var hd = el("header");
+    hd.appendChild(el("div", "eyebrow", "Shared itinerary"));
+    hd.appendChild(el("h1", null, pub.title || "Day trip"));
+    if (pub.route) hd.appendChild(el("div", "route", pub.route));
+    var when = pub.at ? new Date(pub.at) : null, line = "";
+    if (when && !isNaN(when.getTime())) line = "Updated " + when.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    if (pub.by) line += (line ? " by " : "Shared by ") + pub.by;
+    if (line) hd.appendChild(el("div", "route", line));
+    var eb = el("button", "btn sm", "Edit this plan in Only me"); eb.type = "button"; eb.style.alignSelf = "flex-start";
+    twoTap(eb, "Edit this plan in Only me", "Tap again to replace your Only me draft", function () { adoptShared(); pickTab("me"); });
+    hd.appendChild(eb);
+    pubView.appendChild(hd);
+
+    if (pub.message) pubView.appendChild(el("div", "verdict pubmsg", pub.message));
+
+    var n = pub.stops.length;
+    if (!n) { pubView.appendChild(el("div", "verdict", "No stops have been shared yet.")); return; }
+    var sm = el("section", "summary two");
+    var a = el("div", "stat"); a.appendChild(el("div", "k", "Starts")); a.appendChild(el("div", "v", fmt(startOf(pub.stops[0]))));
+    var b = el("div", "stat"); b.appendChild(el("div", "k", "Home by")); b.appendChild(el("div", "v", fmt(endOf(pub.stops[n - 1]))));
+    sm.appendChild(a); sm.appendChild(b); pubView.appendChild(sm);
+
+    var sec = el("section"); sec.appendChild(el("h2", null, "The day"));
+    var ol = el("ol", "timeline");
+    pub.stops.forEach(function (s) {
+      var st = startOf(s), en = endOf(s);
+      var li = el("li", "stop k-" + kind(s));
+      var wh = el("div", "when"); wh.appendChild(el("div", "t", en > st ? range(st, en) : fmt(st))); li.appendChild(wh);
+      var body = el("div", "body"); body.appendChild(el("span", "dot"));
+      var card = el("div", "card");
+      if (s.photo) card.appendChild(photoFigure(s.photo, s.title, FALLBACK[s.id]));
+      card.appendChild(el("div", "title", s.title || "Untitled stop"));
+      var meta = el("div", "meta");
+      meta.appendChild(el("span", "chip" + (s.tag === "Food" ? " food" : ""), s.tag));
+      if (en > st) meta.appendChild(el("span", "chip", durTxt(en - st)));
+      if (!s.legs) meta.appendChild(mapLink(mapUrl(s.title, s.tag), s.tag === "Train" || s.tag === "Bus" ? "Route map" : "Open map"));
+      card.appendChild(meta);
+      if (s.legs) {
+        var lg = el("div", "publegs");
+        s.legs.forEach(function (l) {
+          var r = el("div", "publeg");
+          if (l.code) r.appendChild(el("span", "chip" + (l.code === "Tobu" ? " food" : ""), l.code));
+          r.appendChild(el("span", null, l.name));
+          r.appendChild(mapLink(mapUrl(l.name, "Train")));
+          r.appendChild(el("span", "lt", fmt(l.dep) + " → " + fmt(l.dep + l.ride)));
+          lg.appendChild(r);
+        });
+        card.appendChild(lg);
+      }
+      if (s.note) card.appendChild(el("p", "note", s.note));
+      body.appendChild(card); li.appendChild(body); ol.appendChild(li);
+    });
+    sec.appendChild(ol); pubView.appendChild(sec);
+  }
+
+  function pubStatus() {
+    if (!pubBtn) return;
+    var same = pubState === "ready" && !!pub && keyOf(pub) === keyOf(snapshot(pubMsg.value.trim()));
+    var text, bad = false;
+    if (pubBusy) text = "Publishing…";
+    else if (pubErr) { text = pubErr; bad = true; }
+    else if (pubState === "setup") { text = "Sharing is not set up yet. Paste your Firebase details at the top of index.html."; bad = true; }
+    else if (pubState === "error") { text = "The shared itinerary did not load. Reload the page to try again."; bad = true; }
+    else if (pubState === "loading") text = "Connecting…";
+    else if (pubState === "empty") text = "Nothing is shared yet. The Everyone tab stays empty until someone publishes.";
+    else if (same) text = "Your plan matches what everyone sees.";
+    else { text = "Your plan is different from what everyone sees. Press Publish to everyone to replace it."; bad = true; }
+    pubStatusEl.className = "verdict" + (bad ? " bad" : "");
+    pubStatusEl.textContent = text;
+    pubBtn.disabled = pubBusy || !db || same;
+    loadBtn.disabled = !pub || same;
+  }
+  pubMsg.addEventListener("input", function () { msgTouched = true; pubErr = ""; pubStatus(); });
+  pubName.addEventListener("input", function () { try { localStorage.setItem("nikko-day-trip-name", pubName.value); } catch (e) {} });
+  twoTap(loadBtn, "Start from the shared plan", "Tap again to replace your draft", function () { adoptShared(); });
+  pubBtn.addEventListener("click", function () {
+    if (!db || pubBusy) return;
+    var doc = snapshot(pubMsg.value.trim());
+    doc.publishedAt = new Date().toISOString(); doc.by = pubName.value.trim().slice(0, 60);
+    var up = {}, key = db.ref("history").push().key;
+    up[PATH] = doc; up["history/" + key] = doc;
+    pubBusy = true; pubErr = ""; pubStatus();
+    var slow = setTimeout(function () {
+      if (pubBusy) { pubBusy = false; pubErr = "Still waiting for a connection. Your update will go out when you are back online."; pubStatus(); }
+    }, 12000);
+    db.ref().update(up).then(function () { clearTimeout(slow); pubBusy = false; pubErr = ""; pubStatus(); })
+      .catch(function () { clearTimeout(slow); pubBusy = false; pubErr = "Publishing did not go through. Check your connection and try again."; pubStatus(); });
+  });
+
+  function showTab(which) {
+    var me = which === "me";
+    mePane.hidden = !me; allPane.hidden = me;
+    tabMe.setAttribute("aria-selected", me ? "true" : "false");
+    tabAll.setAttribute("aria-selected", me ? "false" : "true");
+  }
+  function tabFromHash() {
+    var h = ""; try { h = location.hash; } catch (e) {}
+    if (h === "#only-me") return "me";
+    if (h === "#everyone") return "all";
+    return configured ? "all" : "me";
+  }
+  function pickTab(which) { showTab(which); try { location.hash = which === "me" ? "only-me" : "everyone"; } catch (e) {} }
+  tabMe.addEventListener("click", function () { pickTab("me"); });
+  tabAll.addEventListener("click", function () { pickTab("all"); });
+  window.addEventListener("hashchange", function () { showTab(tabFromHash()); });
+
+  function startFirebase() {
+    try {
+      if (!window.firebase) throw new Error("The Firebase library did not load.");
+      firebase.initializeApp(fbCfg); db = firebase.database();
+    } catch (e) { pubState = "error"; renderPub(); pubStatus(); return; }
+    db.ref(PATH).on("value", function (snap) {
+      var cl = snap.exists() ? cleanPub(snap.val()) : null;
+      pub = cl; pubState = cl ? "ready" : "empty";
+      /* A first-time visitor starts from whatever is shared. Only the very first snapshot does this, so a draft is never replaced later. */
+      if (!adopted) { adopted = true; if (cl && !hadLocal) adoptShared(); }
+      if (cl && !msgTouched && document.activeElement !== pubMsg) pubMsg.value = cl.message;
+      renderPub(); pubStatus();
+    }, function () { pubState = "error"; renderPub(); pubStatus(); });
+  }
+
   render();
+  renderPub();
+  showTab(tabFromHash());
+  if (configured) startFirebase(); else pubStatus();
 })();
 </script>
 </body>
